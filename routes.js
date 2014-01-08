@@ -1,3 +1,8 @@
+/*
+curl -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d '{"lng":"bob", "lat":"123", "tripId":"123", "event":"end", "fare":"123"}' http://localhost:8080/drive
+
+*/
+
 var Types = require('hapi').types,
     redis = require("redis"),
     redisClient = redis.createClient();
@@ -11,13 +16,32 @@ redisClient.on("error", function(err){
 })
 
 module.exports = [
-    { method: 'GET', path: '/{args}', config: { handler: showHome } },
-    { method: 'POST', path: '/start', config: { handler: startRide, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } },
-    { method: 'POST', path: '/update', config: { handler: updateRide, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } },
-    { method: 'POST', path: '/end', config: { handler: endRide, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } }
+    {   method: 'GET', 
+        path: '/{args}', 
+        config: { 
+            handler: showHome 
+        } 
+    },
+    {
+        method: 'POST', 
+        path: '/drive', 
+        config: { 
+            handler: updateRide, 
+            payload: 'parse', 
+            validate: { 
+                payload: { 
+                    lat: Types.Number().required(), 
+                    lng: Types.Number().required(),
+                    tripId: Types.Number().integer().min(99).max(10000), //trip id between 100-10000
+                    event: Types.String().alphanum().required(),
+                    fare: Types.Number().optional()
+                } 
+            } 
+        } 
+    }
 ];
 
-
+/* Data Schema for Users and Driver */
 var users = [{
     id: 1,
     name: 'John Smith',
@@ -38,14 +62,49 @@ var driver = [ { carType: 3, earnYear: 34421, earnMonth: 323},
                { carType: 3, earnYear: 34421, earnMonth: 323} 
             ];
 
+/* updating ride */
 function updateRide (request){
-    console.log(request);
+    
+    console.log(request.payload);
+
+    switch(request.payload.event){
+        case 'begin':
+            beginRide(request);
+            break;
+        case 'update':
+            updateRide(request);
+            break;
+        case 'end':
+            endRide(request);
+            break;
+        default:
+            request.reply({status: 'unknown event'}).code(404);
+            break;
+    }
+    
+    
 }
 
-function startRide(request) {
-    console.log(request.query);
-    console.log(request.params);
-}
+
+var beginRide = function(req){
+    console.log(req);
+    req.reply({status: "started"}).code(201);
+};
+
+var updateRide = function (req) {
+    console.log(req);
+    req.reply({status: "updated"}).code(201);
+};
+
+var endRide = function (req) {
+    console.log(req);
+    
+    if (isNaN(req.payload.fare))
+        req.reply({status: "Error", code: "1"}).code(500);
+
+    req.reply({status: "ended"}).code(201);
+
+} 
 
 function showHome(request) {
     console.log(request.query);
