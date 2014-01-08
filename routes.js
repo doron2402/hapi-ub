@@ -1,6 +1,9 @@
 /*
 curl -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d '{"lng":"bob", "lat":"123", "tripId":"123", "event":"end", "fare":"123"}' http://localhost:8080/drive
 
+    TODO:
+
+        1. use hiredis parser for better performance
 */
 
 var Types = require('hapi').types,
@@ -85,13 +88,45 @@ function updateRide (request){
     
 }
 
+/*
+    Begin Ride 
 
+    - using list to store time, using time as key 
+    Bind tripId to starting time
+    Bind tripId to starting location [lat,lng]
+*/
 var beginRide = function(req){
-
     var starting_time = new Date();
-    req.reply({status: "started"}).code(201);
+    
+    redisClient.LPUSH(tripId, [req.payload.lat,req.payload.lng]);
+
+    redisClient.LPUSH('location:' + req.payload.tripId,[req.payload.lat,req.payload.lng], function (err, replies){
+        if (err)
+            console.location(err);
+
+        redisClient.LPUSH('start:' + starting_time, req.payload.tripId, function (err, replies){
+            if (err)
+                console.log(err);
+
+            console.log(replies);
+        });
+
+        console.log(replies);
+
+        //If something goes wrong here we always can use loggly :)
+    });
+    
+    req.reply({status: "started"}).code(201); //Why waiting start driving... 
 };
 
+/*
+    Updating Ride
+
+    - first check that location been changed
+    - using lists for updating the trip id
+
+    Lists
+*/
 var prevUpdate = [];
 var updateRide = function (req) {
     
@@ -99,9 +134,11 @@ var updateRide = function (req) {
     if (prevUpdate.length == 0 || prevUpdate[0] != req.payload.lat || prevUpdate[1] != req.payload.lng ){
         prevUpdate.push(req.payload.lat);
         prevUpdate.push(req.payload.lng);
+
+        redisClient.LPUSH(tripId, [req.payload.lat,req.payload.lng]);
+
     }
 
-    
     req.reply({status: "updated"}).code(201);
 };
 
@@ -111,6 +148,22 @@ var endRide = function (req) {
     if (isNaN(req.payload.fare))
         req.reply({status: "Error", code: "1"}).code(500);
 
+
+    redisClient.LPUSH('location:' + req.payload.tripId,[req.payload.lat,req.payload.lng], function (err, replies){
+        if (err)
+            console.location(err);
+
+        redisClient.LPUSH('end:' + ending_time, req.payload.tripId, function (err, replies){
+            if (err)
+                console.log(err);
+
+            console.log(replies);
+        });
+
+        console.log(replies);
+
+        //If something goes wrong here we always can use loggly :)
+    });
     req.reply({status: "ended"}).code(201);
 
 } 
@@ -122,40 +175,4 @@ function showHome(request) {
     request.reply(request.params);
 }
 
-function getProducts(request) {
 
-    if (request.query.name) {
-        request.reply(findProducts(request.query.name));
-    }
-    else {
-        request.reply(products);
-    }
-}
-
-function findProducts(name) {
-
-    return products.filter(function(product) {
-        return product.name.toLowerCase() === name.toLowerCase();
-    });
-}
-
-function getProduct(request) {
-
-    var product = products.filter(function(p) {
-        return p.id === parseInt(request.params.id);
-    }).pop();
-
-    request.reply(product);
-}
-
-function addProduct(request) {
-
-    var product = {
-        id: products[products.length - 1].id + 1,
-        name: request.payload.name
-    };
-
-    products.push(product);
-
-    request.reply(product).code(201).header('Location', '/products/' + product.id);
-}
