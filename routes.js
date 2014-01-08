@@ -87,18 +87,27 @@ function updateRide (request){
 
 
 var beginRide = function(req){
-    console.log(req);
+
+    var starting_time = new Date();
     req.reply({status: "started"}).code(201);
 };
 
+var prevUpdate = [];
 var updateRide = function (req) {
-    console.log(req);
+    
+    
+    if (prevUpdate.length == 0 || prevUpdate[0] != req.payload.lat || prevUpdate[1] != req.payload.lng ){
+        prevUpdate.push(req.payload.lat);
+        prevUpdate.push(req.payload.lng);
+    }
+
+    
     req.reply({status: "updated"}).code(201);
 };
 
 var endRide = function (req) {
-    console.log(req);
-    
+
+    var ending_time = new Date();
     if (isNaN(req.payload.fare))
         req.reply({status: "Error", code: "1"}).code(500);
 
