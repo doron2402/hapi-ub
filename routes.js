@@ -1,6 +1,12 @@
 /*
 curl -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d '{"lng":"bob", "lat":"123", "tripId":"123", "event":"end", "fare":"123"}' http://localhost:8080/drive
 
+1. begin Ride:
+    curl -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d '{"lat":"37.79947", "lng":"-122.511635", "tripId":"123", "event":"begin"}' http://localhost:8080/drive
+2. Update Ride:
+    curl -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d '{"lat":"37.79964", "lng":"-122.511785", "tripId":"123", "event":"update"}' http://localhost:8080/drive
+3. End Ride: 
+    curl -H "Content-Type: application/json" -H "Accept: application/json" -X POST -d '{"lat":"37.79964", "lng":"-122.511785", "tripId":"123", "event":"end"}' http://localhost:8080/drive
     TODO:
 
         1. use hiredis parser for better performance
@@ -29,7 +35,7 @@ module.exports = [
         method: 'POST', 
         path: '/drive', 
         config: { 
-            handler: updateRide, 
+            handler: RideEvent, 
             payload: 'parse', 
             validate: { 
                 payload: { 
@@ -66,7 +72,7 @@ var driver = [ { carType: 3, earnYear: 34421, earnMonth: 323},
             ];
 
 /* updating ride */
-function updateRide (request){
+function RideEvent (request){
     
     console.log(request.payload);
 
@@ -95,23 +101,32 @@ function updateRide (request){
     Bind tripId to starting time
     Bind tripId to starting location [lat,lng]
 */
-var beginRide = function(req){
+function beginRide(req){
     var starting_time = new Date();
     
-    redisClient.LPUSH(tripId, [req.payload.lat,req.payload.lng]);
+    redisClient.LPUSH(req.payload.tripId, [req.payload.lat,req.payload.lng], function(err, replies){
+        if (err)
+            console.log(err);
+
+        console.log(replies);
+        console.log('LPUSH {tripId} [lat,lng]');
+    });
 
     redisClient.LPUSH('location:' + req.payload.tripId,[req.payload.lat,req.payload.lng], function (err, replies){
         if (err)
             console.location(err);
+
 
         redisClient.LPUSH('start:' + starting_time, req.payload.tripId, function (err, replies){
             if (err)
                 console.log(err);
 
             console.log(replies);
+            console.log('LPUSH start:{starting_time} tripId');
         });
 
         console.log(replies);
+        console.log('LPUSH location:{tripId} [lat,lng]');
 
         //If something goes wrong here we always can use loggly :)
     });
@@ -128,21 +143,20 @@ var beginRide = function(req){
     Lists
 */
 var prevUpdate = [];
-var updateRide = function (req) {
-    
+function updateRide (req) {
     
     if (prevUpdate.length == 0 || prevUpdate[0] != req.payload.lat || prevUpdate[1] != req.payload.lng ){
         prevUpdate.push(req.payload.lat);
         prevUpdate.push(req.payload.lng);
 
-        redisClient.LPUSH(tripId, [req.payload.lat,req.payload.lng]);
+        redisClient.LPUSH(req.payload.tripId, [req.payload.lat,req.payload.lng]);
 
     }
 
     req.reply({status: "updated"}).code(201);
 };
 
-var endRide = function (req) {
+function endRide (req) {
 
     var ending_time = new Date();
     if (isNaN(req.payload.fare))
