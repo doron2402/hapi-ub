@@ -1,20 +1,58 @@
-var Types = require('hapi').types;
+var Types = require('hapi').types,
+    redis = require("redis"),
+    redisClient = redis.createClient();
+
+/*
+    Checking Redis connection
+*/
+redisClient.on("error", function(err){
+    if(err)
+        console.log(err);
+})
 
 module.exports = [
-    { method: 'GET', path: '/products', config: { handler: getProducts, validate: { query: { name: Types.String() } } } },
-    { method: 'GET', path: '/products/{id}', config: { handler: getProduct } },
-    { method: 'POST', path: '/products', config: { handler: addProduct, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } }
+    { method: 'GET', path: '/{args}', config: { handler: showHome } },
+    { method: 'POST', path: '/start', config: { handler: startRide, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } },
+    { method: 'POST', path: '/update', config: { handler: updateRide, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } },
+    { method: 'POST', path: '/end', config: { handler: endRide, payload: 'parse', validate: { payload: { name: Types.String().required().min(3) } } } }
 ];
 
-var products = [{
-        id: 1,
-        name: 'Guitar'
-    },
-    {
+
+var users = [{
+    id: 1,
+    name: 'John Smith',
+    lastLocation: {
+            lat: 22,
+            lng: 23
+        }
+    },{
         id: 2,
-        name: 'Banjo'
-    }
-];
+        name: 'Doron Segal',
+        lastLocation: {
+            lat: 12,
+            lng: 28
+        } 
+    }];
+
+var driver = [ { carType: 3, earnYear: 34421, earnMonth: 323},
+               { carType: 3, earnYear: 34421, earnMonth: 323} 
+            ];
+
+function updateRide (request){
+    console.log(request);
+}
+
+function startRide(request) {
+    console.log(request.query);
+    console.log(request.params);
+}
+
+function showHome(request) {
+    console.log(request.query);
+    console.log(request.params);
+
+    request.reply(request.params);
+}
 
 function getProducts(request) {
 
