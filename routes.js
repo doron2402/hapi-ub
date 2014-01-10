@@ -30,8 +30,13 @@ module.exports = [
         config: { 
             handler: showHome 
         } 
-    },
-    {
+    },{
+        method: 'POST',
+        path: '/test',
+        config: {
+            handler: testingFunc
+        }
+    },{
         method: 'POST', 
         path: '/drive', 
         config: { 
@@ -71,6 +76,16 @@ var driver = [ { carType: 3, earnYear: 34421, earnMonth: 323},
                { carType: 3, earnYear: 34421, earnMonth: 323} 
             ];
 
+function testingFunc(request){
+    
+    
+    var arr = request.payload;
+    
+    console.log(JSON.stringify(arr));
+    var x = JSON.stringify(arr).split('[');
+    console.log(x);
+    request.reply({status: x}).code(201);
+}
 /* updating ride */
 function RideEvent (request){
     
