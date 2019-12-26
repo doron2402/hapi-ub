@@ -21,7 +21,7 @@
   "dependencies": {
     "hapi": "1.8.x",
     "lout": "0.4.x",
-    "handlebars": "1.0.x",
+    "handlebars": "4.5.x",
     "socket.io": "~0.9.16",
     "redis": "~0.10.0"
   },
