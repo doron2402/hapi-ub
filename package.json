@@ -20,9 +20,9 @@
   ],
   "dependencies": {
     "hapi": "1.8.x",
-    "lout": "0.4.x",
-    "handlebars": "1.0.x",
-    "socket.io": "~0.9.16",
+    "lout": "1.1.0",
+    "handlebars": "4.0.12",
+    "socket.io": "~1.0.1",
     "redis": "~0.10.0"
   },
   "private": "true",
