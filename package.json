@@ -19,9 +19,9 @@
     "Node.js"
   ],
   "dependencies": {
-    "hapi": "1.8.x",
-    "lout": "0.4.x",
-    "handlebars": "1.0.x",
+    "hapi": "18.1.0",
+    "lout": "11.2.3",
+    "handlebars": "3.0.4",
     "socket.io": "~0.9.16",
     "redis": "~0.10.0"
   },
